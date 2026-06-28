@@ -51,7 +51,6 @@ export default function ParticleOrb({ state }: Props) {
           zIndex: 0,
         }}
       />
-      <div className="orb-fallback">CIPHER</div>
     </>
   );
 }

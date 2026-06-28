@@ -4,6 +4,7 @@ export function useSpeechSynthesis(onDone?: () => void) {
   const queue = useRef<string[]>([]);
   const speaking = useRef(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [supported] = useState(() => !!window.speechSynthesis);
   const dequeueRef = useRef<() => void>(() => {});
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
@@ -24,13 +25,17 @@ export function useSpeechSynthesis(onDone?: () => void) {
     u.pitch = 0.9;
     if (voiceRef.current) u.voice = voiceRef.current;
     u.onend = () => dequeueRef.current();
-    u.onerror = () => dequeueRef.current();
+    u.onerror = (e) => {
+      console.warn("speechSynthesis error:", e.error);
+      dequeueRef.current();
+    };
     window.speechSynthesis.speak(u);
   }, []);
 
   dequeueRef.current = dequeue;
 
   useEffect(() => {
+    if (!supported) return;
     const load = () => {
       const voices = window.speechSynthesis.getVoices();
       const en = voices.find(v => v.lang.startsWith("en"));
@@ -41,17 +46,14 @@ export function useSpeechSynthesis(onDone?: () => void) {
     return () => {
       window.speechSynthesis.cancel();
     };
-  }, []);
+  }, [supported]);
 
   const speak = useCallback((text: string) => {
     window.speechSynthesis.cancel();
     queue.current = [];
     queue.current.push(text);
-    setTimeout(() => {
-      if (queue.current.length > 0) {
-        dequeue();
-      }
-    }, 50);
+    speaking.current = false;
+    dequeue();
   }, [dequeue]);
 
   const enqueue = useCallback((fragment: string) => {
@@ -61,6 +63,11 @@ export function useSpeechSynthesis(onDone?: () => void) {
     }
   }, [dequeue]);
 
+  const warmup = useCallback(() => {
+    if (!supported) return;
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+  }, [supported]);
+
   const stop = useCallback(() => {
     window.speechSynthesis.cancel();
     queue.current = [];
@@ -68,5 +75,5 @@ export function useSpeechSynthesis(onDone?: () => void) {
     setIsSpeaking(false);
   }, []);
 
-  return { speak, enqueue, stop, isSpeaking };
+  return { speak, enqueue, stop, warmup, isSpeaking, supported };
 }
