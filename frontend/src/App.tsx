@@ -78,11 +78,12 @@ export default function App() {
 
   const handleWake = useCallback(() => {
     speech.warmup();
+    ws.connect();
     setAwake(true);
     setTimeout(() => {
       recognition.start();
     }, 100);
-  }, [speech, recognition]);
+  }, [speech, ws, recognition]);
 
   const handleMicClick = useCallback(() => {
     if (recognition.isListening) {
@@ -124,7 +125,7 @@ export default function App() {
           <div className="orb-fallback">CIPHER</div>
           <p className="wake-subtitle">AI Assistant for macOS</p>
           <button onClick={handleWake} className="wake-btn">
-            Tap to Wake
+            Activate System
           </button>
         </div>
       ) : (

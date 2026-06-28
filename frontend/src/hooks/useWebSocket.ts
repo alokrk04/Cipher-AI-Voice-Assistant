@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from "react";
+import { useRef, useCallback } from "react";
 
 type MessageHandler = (data: Record<string, unknown>) => void;
 
@@ -46,12 +46,5 @@ export function useWebSocket(onMessage: MessageHandler) {
     }
   }, []);
 
-  useEffect(() => {
-    connect();
-    return () => {
-      ws.current?.close();
-    };
-  }, [connect]);
-
-  return { send, reconnect: connect };
+  return { send, connect };
 }
