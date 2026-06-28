@@ -1,0 +1,94 @@
+/Users/alok/AI Voice Assistant/backend/main.py:22: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+INFO:     Will watch for changes in these directories: ['/Users/alok/AI Voice Assistant/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8765 (Press CTRL+C to quit)
+INFO:     Started reloader process [26451] using WatchFiles
+INFO:     Started server process [26455]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:53743 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:53746 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:53756 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:53759 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:53762 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:53782 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:53785 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:53837 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:53840 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+WARNING:  WatchFiles detected changes in 'config.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [26455]
+INFO:     Started server process [38373]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:60085 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:60088 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:60107 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:60110 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:60114 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:60152 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:60155 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:60169 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:60172 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:60176 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:60179 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     127.0.0.1:60182 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:60196 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:60199 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+INFO:     127.0.0.1:60210 - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:60213 - "WebSocket /ws" [accepted]
+INFO:     connection open

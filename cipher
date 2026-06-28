@@ -1,0 +1,171 @@
+#!/bin/bash
+# CIPHER — macOS AI Assistant Launcher
+# Usage: ./cipher [start|stop|restart|status|install|uninstall]
+
+set -e
+
+DIR="$(cd "$(dirname "$0")" && pwd)"
+BACKEND_DIR="$DIR/backend"
+FRONTEND_DIR="$DIR/frontend"
+VENV_DIR="$BACKEND_DIR/.venv"
+LOG_DIR="$DIR/logs"
+PID_FILE="$DIR/.cipher.pid"
+PLIST_LABEL="com.cipher.assistant"
+PLIST_PATH="$HOME/Library/LaunchAgents/$PLIST_LABEL.plist"
+
+mkdir -p "$LOG_DIR"
+
+check_deps() {
+    if [ ! -f "$VENV_DIR/bin/python3" ]; then
+        echo "❌ Virtual environment not found. Run: cd backend && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
+        exit 1
+    fi
+    if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
+        echo "❌ Frontend dependencies not installed. Run: cd frontend && npm install"
+        exit 1
+    fi
+}
+
+start() {
+    if [ -f "$PID_FILE" ]; then
+        OLD_PID=$(cat "$PID_FILE")
+        if kill -0 "$OLD_PID" 2>/dev/null; then
+            echo "❌ CIPHER is already running (PID: $OLD_PID)"
+            exit 1
+        fi
+        rm "$PID_FILE"
+    fi
+
+    check_deps
+
+    echo "🚀 Starting CIPHER..."
+
+    # Start backend
+    cd "$BACKEND_DIR"
+    nohup "$VENV_DIR/bin/python3" main.py > "$LOG_DIR/backend.log" 2>&1 &
+    BACKEND_PID=$!
+    echo "   Backend started (PID: $BACKEND_PID)"
+
+    # Wait for backend to be ready
+    sleep 2
+
+    # Start frontend
+    cd "$FRONTEND_DIR"
+    nohup npx vite --host > "$LOG_DIR/frontend.log" 2>&1 &
+    FRONTEND_PID=$!
+    echo "   Frontend started (PID: $FRONTEND_PID)"
+
+    echo "$BACKEND_PID" > "$PID_FILE"
+    echo "$FRONTEND_PID" >> "$PID_FILE"
+
+    echo ""
+    echo "✅ CIPHER is running!"
+    echo "   Frontend: http://localhost:5173"
+    echo "   Backend:  http://localhost:8765"
+    echo ""
+    echo "   To stop:  ./cipher stop"
+    echo "   Logs:     $LOG_DIR"
+}
+
+stop() {
+    if [ ! -f "$PID_FILE" ]; then
+        echo "❌ CIPHER is not running."
+        return
+    fi
+
+    echo "🛑 Stopping CIPHER..."
+    while read -r PID; do
+        if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+            kill "$PID" 2>/dev/null || true
+            echo "   Stopped PID: $PID"
+        fi
+    done < "$PID_FILE"
+    rm -f "$PID_FILE"
+    echo "✅ CIPHER stopped."
+}
+
+status() {
+    if [ -f "$PID_FILE" ]; then
+        echo "📊 CIPHER Status:"
+        while read -r PID; do
+            if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+                echo "   ✅ Process $PID is running"
+            else
+                echo "   ❌ Process $PID is NOT running"
+            fi
+        done < "$PID_FILE"
+    else
+        echo "❌ CIPHER is not running."
+    fi
+    echo ""
+    echo "   Frontend: http://localhost:5173"
+    echo "   Backend:  http://localhost:8765"
+}
+
+install() {
+    echo "📦 Installing CIPHER as a LaunchAgent..."
+
+    cat > "$PLIST_PATH" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>$PLIST_LABEL</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>$DIR/cipher</string>
+        <string>start</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>WorkingDirectory</key>
+    <string>$DIR</string>
+    <key>StandardOutPath</key>
+    <string>$LOG_DIR/launchd-stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>$LOG_DIR/launchd-stderr.log</string>
+</dict>
+</plist>
+EOF
+
+    launchctl load "$PLIST_PATH" 2>/dev/null || true
+    echo "✅ CIPHER will now start automatically when you log in."
+    echo "   Plist installed at: $PLIST_PATH"
+}
+
+uninstall() {
+    echo "🗑️  Removing CIPHER LaunchAgent..."
+    if [ -f "$PLIST_PATH" ]; then
+        launchctl unload "$PLIST_PATH" 2>/dev/null || true
+        rm "$PLIST_PATH"
+        echo "✅ LaunchAgent removed."
+    else
+        echo "❌ No LaunchAgent found."
+    fi
+}
+
+# Main
+case "${1:-start}" in
+    start)   start ;;
+    stop)    stop ;;
+    restart) stop; sleep 1; start ;;
+    status)  status ;;
+    install) install ;;
+    uninstall) uninstall ;;
+    *)
+        echo "Usage: $0 [start|stop|restart|status|install|uninstall]"
+        echo ""
+        echo "Commands:"
+        echo "  start      Start CIPHER (frontend + backend)"
+        echo "  stop       Stop CIPHER"
+        echo "  restart    Restart CIPHER"
+        echo "  status     Show running status"
+        echo "  install    Install to start automatically at login"
+        echo "  uninstall  Remove auto-start"
+        exit 1
+        ;;
+esac
