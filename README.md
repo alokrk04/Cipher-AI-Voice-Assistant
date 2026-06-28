@@ -5,16 +5,16 @@ A low-latency, voice-controlled AI assistant for macOS with a 3D particle visual
 ## Architecture
 
 ```
-┌─────────────┐     WebSocket      ┌──────────────────┐
-│  React SPA  │ ◄──────────────►  │  FastAPI Backend  │
-│  (Vite)     │    /ws            │  (port 8765)      │
-│  port 5173  │                   │                   │
+┌─────────────┐     WebSocket     ┌──────────────────┐
+│  React SPA  │ ◄──────────────►  │  FastAPI Backend │
+│  (Vite)     │    /ws            │  (port 8765)     │
+│  port 5173  │                   │                  │
 ├─────────────┤                   ├──────────────────┤
-│ SpeechRecog │                   │ Task Planning     │
-│ SpeechSynth │                   │  → 35 intents     │
-│ Three.js    │                   │  → 3-tier routing │
-│ ParticleOrb │                   │ System Actions    │
-└─────────────┘                   │  → AppleScript    │
+│ SpeechRecog │                   │ Task Planning    │
+│ SpeechSynth │                   │  → 35 intents    │
+│ Three.js    │                   │  → 3-tier routing│
+│ ParticleOrb │                   │ System Actions   │
+└─────────────┘                   │  → AppleScript   │
                                   │ FTS5 Memory      │
                                   │ LLM Fallback     │
                                   └──────────────────┘
