@@ -9,6 +9,7 @@ import type { OrbState } from "./three/colors";
 type TranscriptEntry = { role: "user" | "assistant"; text: string };
 
 export default function App() {
+  const [awake, setAwake] = useState(false);
   const [state, setState] = useState<OrbState>("idle");
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const fragmentBuf = useRef("");
@@ -28,6 +29,7 @@ export default function App() {
     } else if (type === "fragment") {
       setState("speaking");
       fragmentBuf.current += data.text as string;
+      speech.enqueue(data.text as string);
       setTranscript((prev) => {
         const copy = [...prev];
         if (copy.length > 0 && copy[copy.length - 1].role === "assistant") {
@@ -74,6 +76,14 @@ export default function App() {
     }, [sendTranscript])
   );
 
+  const handleWake = useCallback(() => {
+    speech.warmup();
+    setAwake(true);
+    setTimeout(() => {
+      recognition.start();
+    }, 100);
+  }, [speech, recognition]);
+
   const handleMicClick = useCallback(() => {
     if (recognition.isListening) {
       recognition.stop();
@@ -83,6 +93,7 @@ export default function App() {
   }, [recognition]);
 
   useEffect(() => {
+    if (!awake) return;
     if (state === "idle" && !recognition.isListening) {
       restartTimer.current = setTimeout(() => {
         recognition.start();
@@ -94,7 +105,7 @@ export default function App() {
         restartTimer.current = null;
       }
     };
-  }, [state, recognition.isListening, recognition.start]);
+  }, [awake, state, recognition.isListening, recognition.start]);
 
   useEffect(() => {
     if (transcriptEndRef.current) {
@@ -104,30 +115,43 @@ export default function App() {
 
   return (
     <>
-      <ParticleOrb state={state} />
-      <div className="overlay">
-        <StatusBar state={state} />
-        <button
-          onClick={handleMicClick}
-          className="mic-btn"
-        >
-          {recognition.isListening ? "Listening..." : "Speak"}
-        </button>
-        <div className="transcript">
-          {transcript.map((entry, i) => (
-            <div key={i} className={entry.role}>
-              <strong>{entry.role === "user" ? "You" : "CIPHER"}:</strong>{" "}
-              {entry.text}
-            </div>
-          ))}
-          {recognition.liveInterim && (
-            <div className="user interim">
-              <strong>You:</strong> {recognition.liveInterim}
-            </div>
-          )}
-          <div ref={transcriptEndRef} />
+      <ParticleOrb state={awake ? state : "idle"} />
+      {!speech.supported && (
+        <div className="banner warn">Your browser does not support speech synthesis. Use Chrome or Safari.</div>
+      )}
+      {!awake ? (
+        <div className="wake-overlay">
+          <div className="orb-fallback">CIPHER</div>
+          <p className="wake-subtitle">AI Assistant for macOS</p>
+          <button onClick={handleWake} className="wake-btn">
+            Tap to Wake
+          </button>
         </div>
-      </div>
+      ) : (
+        <div className="overlay">
+          <StatusBar state={state} />
+          <button
+            onClick={handleMicClick}
+            className="mic-btn"
+          >
+            {recognition.isListening ? "Listening..." : "Speak"}
+          </button>
+          <div className="transcript">
+            {transcript.map((entry, i) => (
+              <div key={i} className={entry.role}>
+                <strong>{entry.role === "user" ? "You" : "CIPHER"}:</strong>{" "}
+                {entry.text}
+              </div>
+            ))}
+            {recognition.liveInterim && (
+              <div className="user interim">
+                <strong>You:</strong> {recognition.liveInterim}
+              </div>
+            )}
+            <div ref={transcriptEndRef} />
+          </div>
+        </div>
+      )}
     </>
   );
 }

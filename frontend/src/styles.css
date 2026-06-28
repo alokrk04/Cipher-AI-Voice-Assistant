@@ -146,19 +146,75 @@ canvas {
   color: var(--text);
 }
 
+.wake-overlay {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  pointer-events: auto;
+}
+
 .orb-fallback {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   color: var(--accent);
-  font-size: 0.85rem;
-  letter-spacing: 0.2em;
+  font-size: 1.4rem;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
-  z-index: 1;
-  opacity: 0.5;
-  pointer-events: none;
+  opacity: 0.6;
   animation: pulse-text 2s ease-in-out infinite;
+}
+
+.wake-subtitle {
+  color: var(--text);
+  opacity: 0.4;
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  margin-top: -0.5rem;
+}
+
+.wake-btn {
+  padding: 1rem 3rem;
+  border-radius: 9999px;
+  border: 2px solid var(--accent);
+  background: rgba(0, 212, 255, 0.08);
+  color: var(--accent);
+  font-size: 1.1rem;
+  font-family: inherit;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.wake-btn:hover {
+  background: rgba(0, 212, 255, 0.2);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+  transform: scale(1.05);
+}
+
+.wake-btn:active {
+  transform: scale(0.97);
+}
+
+.banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0.75rem 1.5rem;
+  text-align: center;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+
+.banner.warn {
+  background: rgba(255, 180, 0, 0.15);
+  color: #ffb800;
+  border-bottom: 1px solid rgba(255, 180, 0, 0.2);
 }
 
 @keyframes pulse-text {

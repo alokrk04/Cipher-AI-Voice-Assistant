@@ -1,12 +1,20 @@
+import asyncio
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers.websocket import router as ws_router
 from services.memory_management import init_db
 from services.system_info import battery_status, wifi_status, system_load
 from services.system_actions import get_system_info, get_active_app
-from config import GEMINI_API_KEY
 
-app = FastAPI(title="JARVIS AI Assistant — Siri for macOS")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="CIPHER AI Assistant — Siri for macOS", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,14 +27,10 @@ app.add_middleware(
 app.include_router(ws_router)
 
 
-@app.on_event("startup")
-async def startup():
-    init_db()
-
 @app.get("/")
 async def root():
     return {
-        "name": "JARVIS",
+        "name": "CIPHER",
         "version": "1.0.0",
         "status": "online",
         "description": "macOS AI Assistant — like Siri for your Mac",
@@ -35,11 +39,18 @@ async def root():
 
 @app.get("/status")
 async def full_status():
+    loop = asyncio.get_running_loop()
+    batt = await loop.run_in_executor(None, battery_status)
+    wifi = await loop.run_in_executor(None, wifi_status)
+    sys_info, active_app = await asyncio.gather(
+        get_system_info(),
+        get_active_app(),
+    )
     return {
-        "system": get_system_info(),
-        "battery": battery_status(),
-        "wifi": wifi_status(),
-        "active_app": get_active_app(),
+        "system": sys_info,
+        "battery": batt,
+        "wifi": wifi,
+        "active_app": active_app,
     }
 
 
