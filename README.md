@@ -1,6 +1,6 @@
 # CIPHER — AI Voice Assistant for macOS
 
-A low-latency, voice-controlled AI assistant for macOS with a 3D particle visualizer. CIPHER listens via your browser microphone, routes intents to local AppleScript actions or LLMs (Ollama/Gemini), and responds with both on-screen text and spoken audio.
+A low-latency, voice-controlled AI assistant for macOS with an 3D particle visualizer. CIPHER listens via your browser microphone, routes intents to local AppleScript actions or LLMs (Ollama/Gemini), and responds with both on-screen text and spoken audio.
 
 ## Architecture
 
