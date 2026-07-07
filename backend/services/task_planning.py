@@ -1,11 +1,14 @@
 import httpx
 import re
+import urllib.parse
 from config import OLLAMA_URL, GEMINI_API_KEY
 from services.memory_management import context_string, store_entry
 from services import system_actions, calendar_access, mail_access, notes, applescript_bridge, system_info
-from google import genai
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+_has_gemini = bool(GEMINI_API_KEY)
+if _has_gemini:
+    from google import genai
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
 SIMPLE_INTENTS = {"greeting", "farewell", "thanks", "identity", "small_talk", "capabilities"}
 LOCAL_INTENTS = {"chat", "small_talk"}
@@ -106,6 +109,16 @@ def classify_intent(text: str) -> str:
             return "create_reminder"
         return "get_reminders"
 
+    if re.search(r"\b(play|play me|put on)\b", lower) and re.search(r"\b(youtube|yt|music|song|video|audio)\b", lower):
+        return "play_youtube"
+    if re.search(r"\b(youtube)\b", lower) and re.search(r"\b(play|search|find|open)\b", lower):
+        return "play_youtube"
+
+    if re.search(r"\b(whatsapp|whats.?app|wa)\b", lower) and re.search(r"\b(send|message|text)\b", lower):
+        return "send_whatsapp"
+    if re.search(r"\b(send|message)\b", lower) and re.search(r"\b(whatsapp|wa)\b", lower):
+        return "send_whatsapp"
+
     if re.search(r"\b(code|write a|function|program|script|implement|python|javascript)\b", lower):
         return "code"
     if re.search(r"\b(search|research|look up|find|browse|google|what is|tell me about)\b", lower):
@@ -142,6 +155,8 @@ CIPHER:"""
 
 
 async def route_to_gemini(text: str, context: str, system_extra: str = "") -> str:
+    if not _has_gemini:
+        raise RuntimeError("Gemini API key not configured")
     system = "You are CIPHER, an AI assistant for macOS. Respond conversationally and concisely, like Siri."
     if system_extra:
         system += f"\n\n{system_extra}"
@@ -408,6 +423,40 @@ async def handle_action_intent(intent: str, text: str) -> str:
         if intent == "empty_trash":
             return system_info.empty_trash()
 
+        if intent == "play_youtube":
+            m = re.search(r"(?:play|search|open|find)\s+(.+?)(?:\s+on\s+youtube|\s+on\s+yt|\s+youtube)$", text, re.IGNORECASE)
+            query = m.group(1).strip() if m else text
+            query = re.sub(r'\b(play|search|open|find|on|youtube|yt|music|song|video)\b', '', query, flags=re.IGNORECASE).strip()
+            if not query:
+                query = "music"
+            encoded = urllib.parse.quote(query)
+            await system_actions.execute_terminal(f'open "https://www.youtube.com/results?search_query={encoded}"')
+            return f"Opening YouTube and searching for '{query}'."
+
+        if intent == "send_whatsapp":
+            msg_m = re.search(r"(?:saying|message|text|body)\s+(.+?)$", text, re.IGNORECASE)
+            message = msg_m.group(1).strip() if msg_m else "Hello from CIPHER!"
+            contact_m = re.search(r"(?:to|send|message)\s+(.+?)(?:\s+(?:on|via|through|using)\s+whatsapp|\s+(?:saying|message|text|body))", text, re.IGNORECASE)
+            contact_name = ""
+            if contact_m:
+                contact_name = contact_m.group(1).strip()
+            elif not msg_m:
+                contact_m2 = re.search(r"(?:to|send|message)\s+(.+?)$", text, re.IGNORECASE)
+                if contact_m2:
+                    contact_name = contact_m2.group(1).strip()
+            if not contact_name:
+                return "Who should I send the WhatsApp message to?"
+            contacts = system_info.get_contacts(contact_name)
+            if not contacts:
+                return f"I couldn't find a contact named '{contact_name}' in your address book."
+            phone = contacts[0]["phone"]
+            phone_clean = re.sub(r'[^\d+]', '', phone)
+            if not phone_clean:
+                return f"I found {contacts[0]['name']} but they don't have a phone number saved."
+            encoded_msg = urllib.parse.quote(message)
+            await system_actions.execute_terminal(f'open "https://wa.me/{phone_clean}?text={encoded_msg}"')
+            return f"Opening WhatsApp Web to send a message to {contacts[0]['name']}."
+
     except Exception as e:
         return f"I ran into an issue: {str(e)}. Please try again."
 
@@ -438,34 +487,23 @@ async def process_intent(text: str) -> str:
                     "• Control volume and brightness\n"
                     "• Lock your screen or put it to sleep\n"
                     "• Take screenshots\n"
+                    "• Play songs on YouTube\n"
+                    "• Send WhatsApp messages\n"
                     "• Search files on your Mac\n"
                     "• Run terminal commands\n"
                     "• Answer questions and have conversations\n"
                     "Just tell me what you need!"
                 )
-            elif intent == "greeting":
-                try:
-                    response = await route_to_gemini(text, context, "Respond with a brief greeting as CIPHER.")
-                except Exception:
-                    response = await _local_or_fallback(text, context)
-            elif intent == "farewell":
-                try:
-                    response = await route_to_gemini(text, context, "Respond with a brief farewell as CIPHER.")
-                except Exception:
-                    response = await _local_or_fallback(text, context)
             elif intent == "identity":
                 response = (
                     "I'm CIPHER, your personal AI assistant for macOS. "
                     "I can help you with apps, emails, calendar, notes, reminders, "
-                    "system control, and more. What would you like me to do?"
+                    "system control, YouTube, WhatsApp, and more. What would you like me to do?"
                 )
             else:
                 response = await _local_or_fallback(text, context)
         elif tier == "cloud":
-            try:
-                response = await route_to_gemini(text, context)
-            except Exception:
-                response = await _local_or_fallback(text, context)
+            response = await _local_or_fallback(text, context)
         else:
             response = await _local_or_fallback(text, context)
     except Exception as e:
@@ -510,4 +548,5 @@ ACTION_INTENTS = {
     "get_reminders", "create_reminder",
     "search_contacts",
     "find_files", "empty_trash",
+    "play_youtube", "send_whatsapp",
 }
