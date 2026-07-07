@@ -12,9 +12,11 @@ export default function App() {
   const [awake, setAwake] = useState(false);
   const [state, setState] = useState<OrbState>("idle");
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
+  const [textInput, setTextInput] = useState("");
   const fragmentBuf = useRef("");
   const restartTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
+  const textInputRef = useRef<HTMLInputElement>(null);
 
   const handleSpeechDone = useCallback(() => {
     setState("idle");
@@ -51,7 +53,6 @@ export default function App() {
         }
         return copy;
       });
-      speech.speak(data.text as string);
     } else if (type === "error") {
       console.error("Server error:", data.text);
       setState("idle");
@@ -63,11 +64,23 @@ export default function App() {
   const sendTranscript = useCallback(
     (text: string) => {
       if (!text.trim()) return;
+      speech.stop();
       setTranscript((prev) => [...prev, { role: "user", text }]);
       ws.send({ type: "transcript", text });
       setState("thinking");
     },
-    [ws]
+    [ws, speech]
+  );
+
+  const handleTextSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const text = textInput.trim();
+      if (!text) return;
+      setTextInput("");
+      sendTranscript(text);
+    },
+    [textInput, sendTranscript]
   );
 
   const recognition = useSpeechRecognition(
@@ -82,6 +95,7 @@ export default function App() {
     setAwake(true);
     setTimeout(() => {
       recognition.start();
+      textInputRef.current?.focus();
     }, 100);
   }, [speech, ws, recognition]);
 
@@ -112,7 +126,7 @@ export default function App() {
     if (transcriptEndRef.current) {
       transcriptEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [transcript, recognition.liveInterim]);
+  }, [transcript, recognition.liveInterim, textInput]);
 
   return (
     <>
@@ -151,6 +165,19 @@ export default function App() {
             )}
             <div ref={transcriptEndRef} />
           </div>
+          <form className="input-bar" onSubmit={handleTextSubmit}>
+            <input
+              ref={textInputRef}
+              type="text"
+              className="text-input"
+              placeholder="Type a message..."
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+            />
+            <button type="submit" className="send-btn">
+              Send
+            </button>
+          </form>
         </div>
       )}
     </>
