@@ -13,7 +13,4 @@ if not os.path.isabs(DATABASE_PATH):
     DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), DATABASE_PATH)
 
 if not GEMINI_API_KEY:
-    raise RuntimeError(
-        "GEMINI_API_KEY is not set. Create a .env file with your key.\n"
-        "See backend/.env.example for reference."
-    )
+    print("WARNING: GEMINI_API_KEY is not set. Will use Ollama only.")
