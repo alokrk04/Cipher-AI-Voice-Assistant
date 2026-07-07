@@ -23,11 +23,14 @@ export function useSpeechSynthesis(onDone?: () => void) {
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 1.0;
     u.pitch = 0.9;
+    u.volume = 1;
     if (voiceRef.current) u.voice = voiceRef.current;
     u.onend = () => dequeueRef.current();
     u.onerror = (e) => {
-      console.warn("speechSynthesis error:", e.error);
-      dequeueRef.current();
+      if (e.error !== "canceled") {
+        console.warn("speechSynthesis error:", e.error);
+        dequeueRef.current();
+      }
     };
     window.speechSynthesis.speak(u);
   }, []);
@@ -38,8 +41,11 @@ export function useSpeechSynthesis(onDone?: () => void) {
     if (!supported) return;
     const load = () => {
       const voices = window.speechSynthesis.getVoices();
-      const en = voices.find(v => v.lang.startsWith("en"));
-      if (en) voiceRef.current = en;
+      const preferred = voices.find(
+        (v) => v.lang.startsWith("en") && (v.name.includes("Google") || v.name.includes("Premium") || v.name.includes("Samantha") || v.name.includes("Daniel"))
+      );
+      const en = voices.find((v) => v.lang.startsWith("en"));
+      voiceRef.current = preferred || en || null;
     };
     load();
     window.speechSynthesis.onvoiceschanged = load;
@@ -51,21 +57,26 @@ export function useSpeechSynthesis(onDone?: () => void) {
   const speak = useCallback((text: string) => {
     window.speechSynthesis.cancel();
     queue.current = [];
-    queue.current.push(text);
     speaking.current = false;
-    dequeue();
+    queue.current.push(text);
+    setTimeout(() => dequeue(), 50);
   }, [dequeue]);
 
   const enqueue = useCallback((fragment: string) => {
     queue.current.push(fragment);
     if (!speaking.current) {
-      dequeue();
+      setTimeout(() => dequeue(), 50);
     }
   }, [dequeue]);
 
   const warmup = useCallback(() => {
     if (!supported) return;
-    window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+    try {
+      const u = new SpeechSynthesisUtterance(" ");
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    } catch {
+    }
   }, [supported]);
 
   const stop = useCallback(() => {
